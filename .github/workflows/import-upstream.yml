@@ -1,6 +1,9 @@
 name: Import upstream repository
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
