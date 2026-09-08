@@ -1,0 +1,22 @@
+name: Import upstream repository
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mirror freestylefly/awesome-gpt-image-2 into this repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEST_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git clone --mirror https://github.com/freestylefly/awesome-gpt-image-2.git upstream.git
+          cd upstream.git
+          git remote set-url --push origin "https://x-access-token:${GH_TOKEN}@github.com/${DEST_REPO}.git"
+          git push --mirror origin
