@@ -1,4 +1,4 @@
-name: Import upstream repository
+name: Import upstream repository snapshot
 
 on:
   push:
@@ -10,16 +10,33 @@ permissions:
   contents: write
 
 jobs:
-  mirror:
+  snapshot:
     runs-on: ubuntu-latest
     steps:
-      - name: Mirror freestylefly/awesome-gpt-image-2 into this repository
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEST_REPO: ${{ github.repository }}
+      - name: Checkout vault
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone upstream snapshot
+        run: git clone --depth 1 https://github.com/freestylefly/awesome-gpt-image-2.git /tmp/upstream
+
+      - name: Copy complete upstream tree except workflow files
         run: |
           set -euo pipefail
-          git clone --mirror https://github.com/freestylefly/awesome-gpt-image-2.git upstream.git
-          cd upstream.git
-          git remote set-url --push origin "https://x-access-token:${GH_TOKEN}@github.com/${DEST_REPO}.git"
-          git push --mirror origin
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            /tmp/upstream/ ./
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No snapshot changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: import complete upstream snapshot"
+          git push origin main
